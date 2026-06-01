@@ -158,14 +158,7 @@ body::before {
   overflow: hidden;
 }
 .artwork.playing { animation-play-state: running; }
-.artwork::after {
-  content: '';
-  position: absolute;
-  width: 28%; height: 28%;
-  background: var(--surface);
-  border-radius: 50%;
-  border: 1px solid var(--border);
-}
+/* artwork center dot removed */
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .artwork-glow {
@@ -735,6 +728,7 @@ function loadTrack(idx) {
   document.getElementById('time-cur').textContent = '0:00';
   document.getElementById('time-tot').textContent = '0:00';
   renderPlaylist();
+  renderLyrics(t.name);
 }
 
 // ── 재생/정지 ──
@@ -908,7 +902,6 @@ const lyricsDB = {
 };
 
 let lyricsOpen = true;
-let currentLyricIdx = -1;
 
 function toggleLyrics() {
   lyricsOpen = !lyricsOpen;
@@ -918,57 +911,15 @@ function toggleLyrics() {
 
 function renderLyrics(trackName) {
   const scroll = document.getElementById('lyrics-scroll');
-  const empty  = document.getElementById('lyrics-empty');
   const lines  = lyricsDB[trackName];
   if (!lines) {
-    scroll.innerHTML = '<div class="lyrics-empty" id="lyrics-empty">이 곡의 가사가 없습니다</div>';
+    scroll.innerHTML = '<div class="lyrics-empty">이 곡의 가사가 없습니다</div>';
     return;
   }
-  scroll.innerHTML = lines.map((l,i) =>
-    `<div class="lyric-line" id="ll-${i}" onclick="seekToLyric(${l.t})">${l.line}</div>`
+  // 타임스탬프 없이 가사 텍스트만 표시
+  scroll.innerHTML = lines.map(l =>
+    `<div class="lyric-line">${l.line}</div>`
   ).join('');
-  currentLyricIdx = -1;
-}
-
-function seekToLyric(t) { audio.currentTime = t; if(audio.paused) audio.play(); }
-
-function syncLyrics() {
-  const trackName = document.getElementById('track-title').textContent;
-  const lines = lyricsDB[trackName];
-  if (!lines) return;
-  const t = audio.currentTime;
-  let idx = -1;
-  for (let i = 0; i < lines.length; i++) {
-    if (t >= lines[i].t) idx = i;
-  }
-  if (idx === currentLyricIdx) return;
-  currentLyricIdx = idx;
-  lines.forEach((_,i) => {
-    const el = document.getElementById(`ll-${i}`);
-    if (!el) return;
-    el.classList.remove('active','passed');
-    if (i === idx) el.classList.add('active');
-    else if (i < idx) el.classList.add('passed');
-  });
-  // 현재 라인 스크롤
-  if (idx >= 0) {
-    const el = document.getElementById(`ll-${idx}`);
-    if (el) {
-      const scroll = document.getElementById('lyrics-scroll');
-      const top = el.offsetTop - scroll.clientHeight/2 + el.clientHeight/2;
-      scroll.scrollTop = top;
-    }
-  }
-}
-
-// timeupdate에 가사 동기화 연결
-audio.addEventListener('timeupdate', syncLyrics);
-
-// loadTrack 후 가사 렌더
-const _origLoadTrack = loadTrack;
-function loadTrack(idx) {
-  _origLoadTrack(idx);
-  if (playlist[idx]) renderLyrics(playlist[idx].name);
 }
 
 async function loadFromGitHub() {
