@@ -667,21 +667,22 @@ function toggleTheme() {
 
 // ── 파일 추가 ──
 function addFiles(files) {
-  Array.from(files).forEach(file => {
-    if (!file.type.startsWith('audio')) return;
+  const fileArr = Array.from(files).filter(f => f.type.startsWith('audio'));
+  fileArr.forEach(file => {
     const url = URL.createObjectURL(file);
     const name = file.name.replace(/\.[^.]+$/, '').replace(/_/g,' ');
+    const idx = playlist.length;
     playlist.push({ name, url, file, duration: 0 });
-    // 길이 미리 읽기
-    const tmp = new Audio(url);
-    const idx = playlist.length - 1;
+    const tmp = new Audio();
+    tmp.preload = 'metadata';
     tmp.addEventListener('loadedmetadata', () => {
-      playlist[idx].duration = tmp.duration;
+      playlist[idx].duration = tmp.duration || 0;
       renderPlaylist();
     });
+    tmp.src = url;
   });
   renderPlaylist();
-  showToast(`${files.length}곡 추가됨`);
+  showToast(`${fileArr.length}곡 추가됨`);
   if (currentIdx === -1 && playlist.length > 0) loadTrack(0);
 }
 
@@ -706,7 +707,7 @@ function renderPlaylist() {
       </div>
       <div class="track-meta">
         <div class="track-name">${t.name}</div>
-        <div class="track-dur">${fmtTime(t.duration)}</div>
+        <div class="track-dur">${t.duration > 0 ? fmtTime(t.duration) : "--:--"}</div>
       </div>
     </div>`).join('');
   // playing-state 클래스
