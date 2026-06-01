@@ -472,6 +472,92 @@ input[type=range].vol::-webkit-slider-thumb {
 }
 .toast.show { transform: translateX(-50%) translateY(0); }
 
+
+/* ── 가사 패널 ── */
+.lyrics-card {
+  width: 100%;
+  max-width: 480px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+}
+.lyrics-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+}
+.lyrics-header-title {
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.lyrics-toggle-icon {
+  font-size: 12px;
+  color: var(--muted);
+  transition: transform var(--transition);
+}
+.lyrics-toggle-icon.open { transform: rotate(180deg); }
+.lyrics-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+.lyrics-body.open { max-height: 400px; }
+.lyrics-scroll {
+  height: 320px;
+  overflow-y: auto;
+  padding: 16px 0;
+  scroll-behavior: smooth;
+}
+.lyrics-scroll::-webkit-scrollbar { width: 3px; }
+.lyrics-scroll::-webkit-scrollbar-track { background: transparent; }
+.lyrics-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.lyric-line {
+  padding: 7px 24px;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+  transition: color 0.3s, font-size 0.3s, font-weight 0.3s;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 6px;
+  margin: 0 8px;
+}
+.lyric-line:hover { color: var(--text); background: var(--surface2); }
+.lyric-line.active {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+  background: linear-gradient(90deg, rgba(79,138,255,0.06), transparent);
+  position: relative;
+}
+.lyric-line.active::before {
+  content: '';
+  position: absolute;
+  left: 8px; top: 50%;
+  transform: translateY(-50%);
+  width: 3px; height: 60%;
+  background: linear-gradient(180deg, var(--accent), var(--accent2));
+  border-radius: 2px;
+}
+.lyric-line.passed { color: var(--muted); opacity: 0.5; }
+.lyrics-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 @media (max-width: 400px) {
   .play-btn { width: 52px; height: 52px; font-size: 20px; }
   .controls { gap: 14px; }
@@ -522,6 +608,19 @@ input[type=range].vol::-webkit-slider-thumb {
     <span class="volume-icon">🔈</span>
     <input type="range" class="vol" id="vol-slider" min="0" max="100" value="70" oninput="setVolume(this.value)">
     <span class="volume-icon">🔊</span>
+  </div>
+</div>
+
+<!-- 가사 -->
+<div class="lyrics-card">
+  <div class="lyrics-header" onclick="toggleLyrics()">
+    <span class="lyrics-header-title">🎤 가사</span>
+    <span class="lyrics-toggle-icon open" id="lyrics-icon">▼</span>
+  </div>
+  <div class="lyrics-body open" id="lyrics-body">
+    <div class="lyrics-scroll" id="lyrics-scroll">
+      <div class="lyrics-empty" id="lyrics-empty">재생 중인 곡의 가사가 여기에 표시됩니다</div>
+    </div>
   </div>
 </div>
 
@@ -737,6 +836,141 @@ function showToast(msg) {
 }
 
 // GitHub에서 playlist.json 로드 (mp3 목록 자동 감지)
+
+const lyricsDB = {
+  "한가족이라면서요 (Remastered)": [
+    { t: 0,   line: "🎵 한가족이라면서요 (Remastered)" },
+    { t: 3,   line: "Yeah yeah" },
+    { t: 5,   line: "좋은 아침입니다 여러분" },
+    { t: 9,   line: "우리 한가족이죠? 하하…" },
+    { t: 15,  line: "한가족이라면서요" },
+    { t: 19,  line: "한가족이라면서요" },
+    { t: 23,  line: "왜 우리들만 겨울이에요" },
+    { t: 28,  line: "애사심은 basement" },
+    { t: 32,  line: "down down down" },
+    { t: 35,  line: "근데 아래층이 또 있네" },
+    { t: 42,  line: "엘리베이터 거울 속" },
+    { t: 45,  line: "내 표정은 매일 월요일 같네" },
+    { t: 49,  line: "에이 타워 복도엔 웃음소리 가득" },
+    { t: 53,  line: "근데 우리 쪽 공긴 아직 차갑네" },
+    { t: 57,  line: "같은 로고 달고 출근" },
+    { t: 60,  line: "같은 카드 찍고 야근" },
+    { t: 63,  line: "같은 건물 불빛 아래" },
+    { t: 66,  line: "왜 체감 온도는 다를까 매번" },
+    { t: 71,  line: '"다 함께 갑시다" 말은 참 따뜻해' },
+    { t: 76,  line: "근데 봄바람은 늘 저쪽 자리에서만 부네" },
+    { t: 82,  line: "누군 꽃다발 사진 올리고" },
+    { t: 86,  line: "나는 조용히 편의점 가지" },
+    { t: 90,  line: "우린 그냥 모니터 밝기만" },
+    { t: 93,  line: "괜히 한 칸 더 올리지" },
+    { t: 98,  line: "웃으면서 듣긴 했는데" },
+    { t: 102, line: "살짝 목이 메이더라… 하하" },
+    { t: 108, line: "한가족이라면서요" },
+    { t: 112, line: "왜 우리만 겨울이에요" },
+    { t: 117, line: "하하 괜찮아요 원래 기대하면 피곤해요" },
+    { t: 123, line: "애사심은 basement down down down" },
+    { t: 130, line: "근데 아래층이 또 있네 what?" },
+    { t: 138, line: "회의실 공기는 오늘도 무거워" },
+    { t: 142, line: "근데 대답은 늘 가벼워" },
+    { t: 146, line: '"적자입니다" 이 말도 이제 bgm 수준' },
+    { t: 151, line: "우리 대장님은 오늘도 silence" },
+    { t: 155, line: "예전엔 사람 얘길 참 자주 했었지" },
+    { t: 160, line: "근데 요즘 우린 서로 얼굴 볼 시간도 없네" },
+    { t: 166, line: "이름 대신 숫자들만 남아서 더 조용해졌네" },
+    { t: 172, line: "근데 웃긴 건 나는 남아있단 거" },
+    { t: 176, line: "쉽게 못 떠난단 거" },
+    { t: 179, line: "아마 여기엔 아직도 진심 같은 게 남았나 봐" },
+    { t: 186, line: "Late night 편의점 앞 캔맥주 하나 손에 들고" },
+    { t: 192, line: '"야 그래도 우린 멋진 일 하잖아."' },
+    { t: 196, line: "그 말에 다들 조용히 웃네" },
+    { t: 202, line: "올해도 버텨 또 버텨 웃어 또 웃어" },
+    { t: 206, line: "회의실 공기 눈치 경쟁 표정 management" },
+    { t: 210, line: "성과보다 중요한 messaging" },
+    { t: 214, line: '"조금만 더" "다 같이 가" 그 말만 반복되는 drama' },
+    { t: 220, line: "누군 celebrate 누군 stay late" },
+    { t: 224, line: "야근 후 편의점 microwave" },
+    { t: 228, line: "이직 상상만 수백 번째인데 이상하게 아직 여기 alive" },
+    { t: 235, line: "애사심은 땅에 떨어져" },
+    { t: 239, line: "근데 지하실이 있을 줄 몰랐지" },
+    { t: 244, line: "우린 아직도 카드 찍고 웃는데" },
+    { t: 248, line: "마음은 벌써 이직 몇 번 했지" },
+    { t: 253, line: "Still here still working still smiling somehow" },
+    { t: 260, line: "한가족이라면서요" },
+    { t: 264, line: "왜 우리만 겨울이에요" },
+    { t: 269, line: "언젠가는 우리도 봄이 오겠죠" },
+    { t: 275, line: "애사심은 basement 근데 우린 아직 살아있네" },
+    { t: 282, line: "La la la 오늘도 버텨낸 우리" },
+    { t: 287, line: "La la la 생각보다 꽤 멋있더라" },
+    { t: 294, line: "같은 로고 아래 같은 꿈을 믿던 시절이 있었지만" },
+    { t: 300, line: "지금은 다른 계절을 살고 있지만" },
+    { t: 305, line: "그래도 뭐 우린 아직 안 끝났잖아 🎵" },
+  ]
+};
+
+let lyricsOpen = true;
+let currentLyricIdx = -1;
+
+function toggleLyrics() {
+  lyricsOpen = !lyricsOpen;
+  document.getElementById('lyrics-body').classList.toggle('open', lyricsOpen);
+  document.getElementById('lyrics-icon').classList.toggle('open', lyricsOpen);
+}
+
+function renderLyrics(trackName) {
+  const scroll = document.getElementById('lyrics-scroll');
+  const empty  = document.getElementById('lyrics-empty');
+  const lines  = lyricsDB[trackName];
+  if (!lines) {
+    scroll.innerHTML = '<div class="lyrics-empty" id="lyrics-empty">이 곡의 가사가 없습니다</div>';
+    return;
+  }
+  scroll.innerHTML = lines.map((l,i) =>
+    `<div class="lyric-line" id="ll-${i}" onclick="seekToLyric(${l.t})">${l.line}</div>`
+  ).join('');
+  currentLyricIdx = -1;
+}
+
+function seekToLyric(t) { audio.currentTime = t; if(audio.paused) audio.play(); }
+
+function syncLyrics() {
+  const trackName = document.getElementById('track-title').textContent;
+  const lines = lyricsDB[trackName];
+  if (!lines) return;
+  const t = audio.currentTime;
+  let idx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (t >= lines[i].t) idx = i;
+  }
+  if (idx === currentLyricIdx) return;
+  currentLyricIdx = idx;
+  lines.forEach((_,i) => {
+    const el = document.getElementById(`ll-${i}`);
+    if (!el) return;
+    el.classList.remove('active','passed');
+    if (i === idx) el.classList.add('active');
+    else if (i < idx) el.classList.add('passed');
+  });
+  // 현재 라인 스크롤
+  if (idx >= 0) {
+    const el = document.getElementById(`ll-${idx}`);
+    if (el) {
+      const scroll = document.getElementById('lyrics-scroll');
+      const top = el.offsetTop - scroll.clientHeight/2 + el.clientHeight/2;
+      scroll.scrollTop = top;
+    }
+  }
+}
+
+// timeupdate에 가사 동기화 연결
+audio.addEventListener('timeupdate', syncLyrics);
+
+// loadTrack 후 가사 렌더
+const _origLoadTrack = loadTrack;
+function loadTrack(idx) {
+  _origLoadTrack(idx);
+  if (playlist[idx]) renderLyrics(playlist[idx].name);
+}
+
 async function loadFromGitHub() {
   try {
     const res = await fetch('playlist.json');
